@@ -1,0 +1,62 @@
+"<domain type='kvm'> \
+  <name>test1</name> \
+  <uuid>a98d6365-1809-105e-a604-ac8b16469b0f</uuid> \
+  <memory unit='KiB'>4194304</memory> \
+  <currentMemory unit='KiB'>4194304</currentMemory> \
+  <vcpu placement='static'>1</vcpu> \
+  <os> \
+    <type arch='x86_64' machine='pc'>hvm</type> \
+    <boot dev='cdrom'/> \
+  </os> \
+  <clock offset='utc'> \
+    <timer name='rtc' tickpolicy='catchup'/> \
+    <timer name='pit' tickpolicy='delay'/> \
+    <timer name='hpet' present='no'/> \
+  </clock> \
+  <on_poweroff>destroy</on_poweroff> \
+  <on_reboot>restart</on_reboot> \
+  <on_crash>destroy</on_crash> \
+  <devices> \
+    <emulator>/usr/bin/qemu-system-x86_64</emulator> \
+    <!--disk type='file' device='disk'> \
+      <driver name='qemu' type='qcow2'/> \
+      <source file='/media/diptyaroop/Data/Semester-4/CS_695_TA/testvm1.qcow2'/> \
+      <target dev='vda' bus='virtio'/> \
+      <address type='pci' domain='0x0000' bus='0x03' slot='0x01' function='0x1'/> \
+    </disk> \ -->
+    <disk type='file' device='cdrom'> \
+      <source file='/home/diptyaroop/Downloads/bionic.iso'/> \
+      <target dev='hda'/> \
+    </disk> \
+    <pool type=\"dir\"> \
+        <name>virtimages</name> \
+        <target> \
+            <path>'/media/diptyaroop/Data/Semester-4/CS_695_TA/testvm1.qcow2'</path> \
+        </target> \
+    </pool>
+    <interface type='network'> \
+      <mac address='52:54:00:68:4f:ef'/> \
+      <source network='default'/> \
+      <model type='virtio'/> \
+      <address type='pci' domain='0x0000' bus='0x01' slot='0x01' function='0x1'/> \
+    </interface> \
+    <serial type='pty'> \
+      <target type='isa-serial' port='0'> \
+        <model name='isa-serial'/> \
+      </target> \
+    </serial> \
+    <console type='pty'> \
+      <target type='serial' port='0'/> \
+    </console> \
+    <channel type='unix'> \
+      <target type='virtio' name='org.qemu.guest_agent.0'/> \
+      <address type='virtio-serial' controller='0' bus='0' port='1'/> \
+    </channel> \
+    <input type='mouse' bus='ps2'/> \
+    <input type='keyboard' bus='ps2'/> \
+    <graphics type='spice' autoport='yes'> \
+      <listen type='address'/> \
+      <image compression='off'/> \
+    </graphics> \
+  </devices> \
+</domain>

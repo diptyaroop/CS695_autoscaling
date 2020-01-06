@@ -29,7 +29,6 @@ using namespace std;
 #define MAX_SERVERS 100
 #define MEGA_POW 1000000
 #define NOTIF_PORT 6000
-#define ETH_IFACE "enp60s0"
 #define MAX_AVAILABLE_SERVERS 2
 #define REASONABLE_TIME_GAP 3
 
@@ -63,6 +62,7 @@ static int forceQuit = false;
 static bool balanceLoad = false;
 static int numClientsRemovedFromLoad = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static char nwIface[MAX_CMD_LEN];
 
 bool connected();
 void *clientThreadInit(void *);
@@ -106,7 +106,7 @@ void *handleNotification(void *args)
     fd = socket(AF_INET, SOCK_DGRAM, 0);     
     /*AF_INET - to define IPv4 Address type.*/
     ifr.ifr_addr.sa_family = AF_INET;
-    memcpy(ifr.ifr_name, ETH_IFACE, IFNAMSIZ-1);
+    memcpy(ifr.ifr_name, nwIface, IFNAMSIZ-1);
     /*Accessing network interface information by passing address using ioctl.*/
     ioctl(fd, SIOCGIFADDR, &ifr);
     close(fd);
@@ -202,7 +202,9 @@ int main(int argc, char *argv[])
 {
 	cmdLineArgsValidityCheck(argc, argv);
 	int threadIDArr[MAX_CLIENTS];
-	numClients = atoi(argv[2]);
+	numClients = atoi(argv[3]);
+	memset(nwIface, 0, MAX_CMD_LEN);
+	strncpy(nwIface, argv[1], strlen(argv[1]));
 	gKey=0;
 	timeout=false;
 	signal(SIGINT, signalHandler);
@@ -211,24 +213,15 @@ int main(int argc, char *argv[])
 	for(int i=0;i<numClients;i++)
 	{
 		memset(cliReq[i].serverName, 0, MAX_SERVER_NAME_LENGTH);
-		strncpy(cliReq[i].serverName, argv[1], strlen(argv[1]));
-		cliReq[i].loadTestDuration = atoi(argv[3]);
+		strncpy(cliReq[i].serverName, argv[2], strlen(argv[2]));
+		cliReq[i].loadTestDuration = atoi(argv[4]);
 		cliReq[i].threadID = i;
 		numRequests[i]=0;
 		responseTime[i] = 0.0;
 		pthread_create(&clientThreadPool[i], NULL, clientThreadInit, (void *)&cliReq[i]);
 	}
 	
-	/*int msec = 0, trigger = atoi(argv[3])*1000;
-	clock_t before = clock();
-	do 
-	{
-  		clock_t difference = clock() - before;
-  		msec = difference * 1000 / CLOCKS_PER_SEC;
-  		//printf("%d**%d\n", msec, trigger);
-	} while ( msec < trigger );*/
-
-	int loadTestDuration = atoi(argv[3]);
+	int loadTestDuration = atoi(argv[4]);
 	gettimeofday(&t0, 0);
 	struct timespec delay;    
     delay.tv_sec = loadTestDuration;
@@ -366,9 +359,9 @@ int constructMessage(int cmdIndex, char cmdSeq[], char value[])
 
 void cmdLineArgsValidityCheck(int argc, char *argv[])
 {
-	if(argc!=4)
+	if(argc!=5)
 	{
-		printf("Usage : ./<executable> <server_ip> <num_threads> <load_test_duration>\n");
+		printf("Usage : ./<executable> <nw_iface> <server_ip> <num_threads> <load_test_duration>\n");
 		exit(0);		
 	}
 	/*else if(argc==2)
@@ -500,7 +493,7 @@ void communicateWithServer(clientRequirements *cliReq, const char *token, char c
 	else if(!strcmp(token, "disconnect"))
 	{
 		close(clientFD[cliReq->threadID]);
-		printf("Client [%d] disconnected!\n", cliReq->threadID);
+		printf("Client [%d] disconnected from server %s!\n", cliReq->threadID, cliReq->serverName);
 	}
 	gettimeofday(&endTime, NULL);
 	double st = startTime.tv_usec + (unsigned long long)startTime.tv_sec * MEGA_POW;
